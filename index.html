@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aviator Game</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ background:#10151f;
+ color:white;
+ font-family:Arial,sans-serif;
+}
+header{
+ background:#1c2635;
+ padding:18px;
+ text-align:center;
+ font-size:25px;
+ font-weight:bold;
+ color:#ff4545;
+}
+.balance{
+ text-align:center;
+ padding:15px;
+ font-size:19px;
+ background:#202c3b;
+}
+.game{
+ margin:15px;
+ height:310px;
+ background:linear-gradient(#16283b,#07111c);
+ border-radius:15px;
+ position:relative;
+ overflow:hidden;
+ display:flex;
+ justify-content:center;
+ align-items:center;
+}
+#multiplier{
+ font-size:55px;
+ font-weight:bold;
+ color:#fff;
+}
+#plane{
+ position:absolute;
+ font-size:55px;
+ bottom:30px;
+ left:15px;
+ transition:none;
+}
+.controls{
+ background:#202c3b;
+ margin:15px;
+ padding:18px;
+ border-radius:15px;
+ text-align:center;
+}
+input{
+ width:100%;
+ padding:15px;
+ font-size:18px;
+ border-radius:8px;
+ border:none;
+ margin-bottom:12px;
+}
+button{
+ width:100%;
+ padding:15px;
+ border:0;
+ border-radius:8px;
+ font-size:18px;
+ font-weight:bold;
+ margin:5px 0;
+ cursor:pointer;
+}
+#play{background:#24c76a;color:white}
+#cash{background:#f6a623;color:black}
+#reset{background:#53657a;color:white}
+h3{text-align:center}
+.history{
+ margin:15px;
+ padding:15px;
+ background:#202c3b;
+ border-radius:12px;
+}
+#history{
+ display:flex;
+ flex-wrap:wrap;
+ gap:8px;
+}
+#history span{
+ background:#34475d;
+ padding:8px;
+ border-radius:8px;
+}
+</style>
+</head>
+
+<body>
+
+<header>✈ AVIATOR DEMO</header>
+
+<div class="balance">
+ Balance: 🪙 <span id="balance">10000</span> Coins
+</div>
+
+<div class="game">
+ <div id="multiplier">1.00x</div>
+ <div id="plane">✈️</div>
+</div>
+
+<div class="controls">
+
+<h3>PLACE YOUR BET</h3>
+
+<input id="bet" type="number" value="100" min="1">
+
+<button id="play" onclick="startGame()">
+ START ROUND
+</button>
+
+<button id="cash" onclick="cashOut()" disabled>
+ CASH OUT
+</button>
+
+<button id="reset" onclick="resetGame()">
+ RESET GAME
+</button>
+
+<p id="message">Ready to Play!</p>
+
+</div>
+
+<div class="history">
+<h3>ROUND HISTORY</h3>
+<div id="history"></div>
+</div>
+
+<script>
+
+let balance=10000;
+let multiplier=1;
+let crashPoint=0;
+let playing=false;
+let cashed=false;
+let betAmount=0;
+let timer=null;
+let startTime=0;
+
+function updateBalance(){
+ document.getElementById("balance").innerText=balance;
+}
+
+function startGame(){
+
+ if(playing)return;
+
+ betAmount=Number(document.getElementById("bet").value);
+
+ if(!Number.isFinite(betAmount)||betAmount<=0||betAmount>balance){
+  document.getElementById("message").innerText="Invalid Bet!";
+  return;
+ }
+
+ balance-=betAmount;
+ updateBalance();
+
+ multiplier=1;
+ cashed=false;
+ playing=true;
+
+ crashPoint=Number((1+Math.random()*5).toFixed(2));
+
+ startTime=Date.now();
+
+ document.getElementById("multiplier").innerText="1.00x";
+ document.getElementById("plane").style.left="15px";
+ document.getElementById("play").disabled=true;
+ document.getElementById("cash").disabled=false;
+ document.getElementById("message").innerText="Plane is Flying!";
+
+ timer=setInterval(updateGame,50);
+}
+
+function updateGame(){
+
+ let seconds=(Date.now()-startTime)/1000;
+
+ multiplier=Math.exp(seconds*0.20);
+
+ document.getElementById("multiplier").innerText=
+ multiplier.toFixed(2)+"x";
+
+ let plane=document.getElementById("plane");
+ let distance=Math.min(75,seconds*5);
+ plane.style.left=distance+"%";
+ plane.style.bottom=(30+seconds*8)+"px";
+
+ if(multiplier>=crashPoint){
+  crash();
+ }
+}
+
+function cashOut(){
+
+ if(!playing||cashed)return;
+
+ cashed=true;
+
+ let winnings=Math.floor(betAmount*multiplier);
+
+ balance+=winnings;
+ updateBalance();
+
+ document.getElementById("message").innerText=
+ "CASHED OUT! +" + winnings + " Coins";
+
+ document.getElementById("cash").disabled=true;
+}
+
+function crash(){
+
+ clearInterval(timer);
+ playing=false;
+
+ document.getElementById("multiplier").innerText=
+ crashPoint.toFixed(2)+"x";
+
+ if(!cashed){
+  document.getElementById("message").innerText=
+  "CRASHED! Bet Lost";
+ }else{
+  document.getElementById("message").innerText=
+  "Round Finished! You Won!";
+ }
+
+ addHistory(crashPoint);
+
+ document.getElementById("play").disabled=false;
+ document.getElementById("cash").disabled=true;
+}
+
+function addHistory(value){
+
+ let item=document.createElement("span");
+ item.innerText=value.toFixed(2)+"x";
+
+ document.getElementById("history").prepend(item);
+
+ if(document.getElementById("history").children.length>15){
+  document.getElementById("history").lastChild.remove();
+ }
+}
+
+function resetGame(){
+
+ if(playing){
+  clearInterval(timer);
+  playing=false;
+ }
+
+ balance=10000;
+ multiplier=1;
+ cashed=false;
+
+ updateBalance();
+
+ document.getElementById("multiplier").innerText="1.00x";
+ document.getElementById("plane").style.left="15px";
+ document.getElementById("plane").style.bottom="30px";
+ document.getElementById("message").innerText="Game Reset!";
+ document.getElementById("play").disabled=false;
+ document.getElementById("cash").disabled=true;
+}
+
+updateBalance();
+
+</script>
+
+</body>
+</html>
